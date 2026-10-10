@@ -63,7 +63,7 @@ class MineSettings extends ChangeNotifier {
   Map<int, int> bestTimes = {}; // difficulty index -> best seconds
   Set<String> dailyDone = {}; // yyyy-mm-dd dates cleared
   bool reviewAsked = false;
-  bool isPro = false;
+  bool isPro = true; // everything unlocked — no Pro version
 
   /// Custom theme colors (ARGB ints). Defaults mirror Classic Dig.
   Map<String, int> customColors = Map.of(_defaultCustomColors);
@@ -146,7 +146,7 @@ class MineSettings extends ChangeNotifier {
     bestTimes = _decodeBest(p.getString(_kBest));
     dailyDone = _decodeDaily(p.getString(_kDaily));
     reviewAsked = p.getBool(_kReviewAsked) ?? false;
-    isPro = p.getBool(_kIsPro) ?? false;
+    isPro = true; // everything unlocked
     for (final k in _defaultCustomColors.keys) {
       customColors[k] = p.getInt('$_kCustomPrefix$k') ?? _defaultCustomColors[k]!;
     }
