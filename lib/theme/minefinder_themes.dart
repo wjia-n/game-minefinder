@@ -318,7 +318,7 @@ class MineThemes {
     ),
     MineThemeDef(
       id: 'arctic',
-      name: 'Arctic Mine',
+      name: 'Frost Mine',
       pro: true,
       soilDark: Color(0xFF0D1418),
       soil: Color(0xFF182229),

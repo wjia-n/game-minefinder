@@ -17,6 +17,9 @@ import 'package:audioplayers/audioplayers.dart';
 ///   resumes exactly where it left off instead of restarting or dying.
 /// - Every public method catches player errors; audio can never crash the app.
 class MineAudio {
+  /// Per-game pitch character (minefinder): 1.12x. Makes SFX unique.
+  static const double _pitchMul = 1.120;
+
   static const int _rate = 22050;
   final AudioPlayer _sfx = AudioPlayer();
   final AudioPlayer _music = AudioPlayer();
@@ -103,6 +106,8 @@ class MineAudio {
 
   List<double> _tone(double freq, double secs,
       {double freqEnd = 0, double attack = 0.02, double harmonics = 0.25}) {
+    freq *= _pitchMul;
+    freqEnd *= _pitchMul;
     final n = (_rate * secs).round();
     final out = List<double>.filled(n, 0);
     for (int i = 0; i < n; i++) {
@@ -190,46 +195,44 @@ class MineAudio {
       _cache.putIfAbsent(key, () => _wav(build()));
 
   Uint8List _menuBytes() => _clip('music_menu', () {
-        // Warm fingerpicked folk: Em – C – G – D, 16s loop.
-        final seq = [
-          [164.81, 196.0, 246.94], // Em
-          [130.81, 164.81, 196.0], // C
-          [196.0, 246.94, 293.66], // G
-          [146.83, 185.0, 220.0], // D
-        ];
-        final out = <double>[];
-        for (final chord in seq) {
-          out.addAll(_padChord(chord, 4.0));
-        }
-        // Gentle brass melody over it.
-        final melody = [
-          329.63, 392.0, 440.0, 392.0, 329.63, 293.66, 246.94, 293.66
-        ];
-        final n = (_rate * 16).round();
-        final full = List<double>.from(out);
-        for (int k = 0; k < melody.length; k++) {
-          final start = (n * k / melody.length).round();
-          final tone = _tone(melody[k], 0.9, harmonics: 0.3);
-          for (int i = 0; i < tone.length && start + i < n; i++) {
-            full[start + i] += tone[i] * 0.28;
+        // B bass + melody 0 – 5 – 4 – 3, 16s loop. Unique to minefinder.
+        final bassNotes = [123.47, 207.65, 185.00, 164.81];
+        final melNotes = [739.98, 1244.50, 1108.72, 987.76];
+        final out = List<double>.filled((_rate * 16).round(), 0);
+        final segLen = (_rate * 4).round();
+        for (int s = 0; s < 4; s++) {
+          final bass = _tone(bassNotes[s], 3.5, harmonics: 0.4);
+          final mel = _tone(melNotes[s], 1.2, harmonics: 0.25);
+          for (int i = 0; i < bass.length && s * segLen + i < out.length; i++) {
+            out[s * segLen + i] += bass[i] * 0.5;
           }
-        }
-        return full;
-      });
-
-  Uint8List _gameBytes() => _clip('music_game', () {
-        // Soft dig-site ambience: low drone + sparse wooden taps, 12s loop.
-        final n = (_rate * 12).round();
-        final out = List<double>.from(_padChord([98.0, 146.83], 12.0));
-        for (int k = 0; k < 6; k++) {
-          final start = (n * (k + 0.5) / 6.5).round();
-          final knock = _knock();
-          for (int i = 0; i < knock.length && start + i < n; i++) {
-            out[start + i] += knock[i] * 0.12;
+          final melStart = s * segLen + segLen ~/ 4;
+          for (int i = 0; i < mel.length && melStart + i < out.length; i++) {
+            out[melStart + i] += mel[i] * 0.35;
           }
         }
         return out;
       });
+
+
+  Uint8List _gameBytes() => _clip('music_game', () {
+        // B arpeggiated 0 – 5 – 4 – 3, 16s loop. Unique to minefinder.
+        final notes = [246.94, 311.12, 369.99, 311.12, 415.30, 493.88, 622.25, 493.88, 369.99, 466.16, 554.36, 466.16, 329.63, 415.30, 493.88, 415.30];
+        final out = <double>[];
+        final noteLen = 16.0 / notes.length;
+        for (final n in notes) {
+          out.addAll(_tone(n, noteLen * 0.9, harmonics: 0.3));
+          final gap = List<double>.filled((_rate * noteLen * 0.1).round(), 0);
+          out.addAll(gap);
+        }
+        // Soft pad underneath
+        final pad = _padChord([246.94, 311.12, 369.99], 16.0);
+        for (int i = 0; i < out.length && i < pad.length; i++) {
+          out[i] += pad[i] * 0.3;
+        }
+        return out;
+      });
+
 
   // ------------------------------------------------------------------ SFX
   Future<void> _play(Uint8List bytes) async {
