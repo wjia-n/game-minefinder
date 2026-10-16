@@ -3,6 +3,7 @@ import '../services/audio_service.dart';
 import '../services/settings_service.dart';
 import '../theme/minefinder_themes.dart';
 import '../theme/miner_ui.dart';
+import '../transfer/transfer_ui.dart';
 
 /// Settings: audio toggles + volume, stats.
 class SettingsScreen extends StatelessWidget {
@@ -44,6 +45,7 @@ class SettingsScreen extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Column(
                 children: [
+              TransferSaveTile(gameSlug: 'minefinder'),
                   WoodCard(
                     theme: t,
                     child: Column(
